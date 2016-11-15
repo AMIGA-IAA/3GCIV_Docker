@@ -1,0 +1,295 @@
+# $Id: general.h1,v 2.7 2011/04/29 08:37:38 cal103 Exp cal103 $
+
+# Input variables:
+#	MACHINE_OS	  The platform type (usually taken from environment)
+#	OS		  The operating system (usually taken from environment)
+#	MACHINE		  The CPU type (usually taken from environment)
+#	CEXTRAS		  Extra C flags for compiling taken from environment
+#	USE_STATIC_KLIBS  If defined, the Karma libraries are linked statically
+#	LIBDIRS		  Optional colon-separated list of directories
+#			  containing non-Karma libraries
+#	KARMAINCLUDEPATH  Path to the Karma include files
+#	KARMABASE	  Path to base of Karma runtime distribution
+
+# The following compiler and linker command variables are created:
+#	CC		  ANSI C compiler
+#	LD		  C linker
+#	CCpp		  C++ compiler
+#	LDpp		  C++ linker
+#	LDso		  Linker and flags required for building shared objects
+#	KOPTIMISE	  Optimisation flags
+#	CCpp_libdirs	  Directories containing C++ special shared libraries
+#	CCpp_libs	  Special shared libraries for C++
+#       cc_picflag	  Flag(s) required to produce position independent code
+#       CC_picflag	  Flag(s) required to produce position independent code
+#	OS_LIBS		  Extra OS-specific libraries that are always needed
+#	OS_IMPLICIT_LIBS  Extra OS-specific libraries that are needed, but may
+#				already be loaded by libkarma.so
+
+# The default optimisation flags can be overridden by adding
+# KOPTIMISE="-flags" to the make command. You can use this for debugging.
+
+# MRC 2011/04/27: Define environment variable MAKE_MULTIBEAMVIS to build
+# MultibeamVis/View.
+ifdef MAKE_MULTIBEAMVIS
+  MAKE_STATIC_ONLY := 1
+  USE_STATIC_KLIBS := 1
+endif
+
+karmalibpath := $(KARMALIBPATH)
+
+ifdef LIBDIRS
+  libdirs := $(LIBDIRS)
+endif
+
+ifdef USE_STATIC_KLIBS
+  ifdef libdirs
+    rpath := $(libdirs)
+  endif
+else
+  # MRC: For production builds, set rpath here to the installed location, e.g.
+  #      rpath := /usr/local/karma/lib
+  rpath := $(karmalibpath)
+
+  ifdef libdirs
+    rpath := $(rpath):$(libdirs)
+  endif
+endif
+
+lpath := -L$(karmalibpath)
+ifdef libdirs
+  lpath += $(addprefix -L,$(subst :, ,$(libdirs)))
+endif
+
+kcflags = -DOS_$(OS) -DMACHINE_$(MACHINE) -I$(KARMABASE)/site/include \
+  -I$(KARMAINCLUDEPATH) $(KOPTIMISE) $(CEXTRAS) -D__KARMA__
+
+ifeq ($(OS),SunOS)
+  CC           = gcc -fpcc-struct-return $(kcflags) -Wall -D__USE_FIXED_PROTOTYPES__
+  LD           = gcc $(lpath)
+  CCpp         = CC $(kcflags)
+  LDpp         = CC $(lpath)
+  cc_picflag   = -fPIC
+  KOPTIMISE    = -O2
+  rpathswitch  = -L
+  sharedswitch = -assert pure-text
+  LDso         = ld $(sharedswitch)
+  slink_switch = -Bstatic
+  dlink_switch = -Bdynamic
+endif
+
+ifeq ($(OS),Solaris)
+  GCC := /usr/local/gnu/bin/gcc-3.1.1
+  G++ := /usr/local/gnu/bin/g++-3.1.1
+
+  ifdef K_NATIVE_COMPILER
+    CC           = cc -D_REENTRANT $(kcflags)
+    LD           = cc $(lpath) -Wl,-R,$(rpath)
+    CCpp         = CC -D_REENTRANT $(kcflags)
+    LDpp         = CC $(lpath) -R$(rpath)
+    cc_picflag   = -KPIC
+    KOPTIMISE    = -xO2
+  else
+    CCpp_libdirs = `$(GCC) --print-search-dirs | fgrep libraries: | awk -- '{print $$2}' | sed -e 's*/:*:*g' | sed -e 's*/$$**'`
+    CCpp_libs    = -lgcc_s -lstdc++
+    CC           = $(GCC) -fpcc-struct-return -D_REENTRANT $(kcflags) -Wall
+    LD           = $(GCC) $(lpath) -Wl,-R,$(rpath)
+    CCpp         = $(G++) -fpcc-struct-return -D_REENTRANT $(kcflags)
+    LDpp         = $(G++) $(lpath)
+    cc_picflag   = -fPIC
+    KOPTIMISE    = -O2
+  endif
+  OS_LIBS          := -lthread
+  OS_IMPLICIT_LIBS := -ldl -lsocket -lnsl -lposix4
+  rpathswitch  = -R
+  sharedswitch = -Gi
+  LDso         = ld $(sharedswitch)
+  slink_switch = -Bstatic
+  dlink_switch = -Bdynamic
+endif
+
+ifeq ($(OS),Linux)
+  # gcc-3.4 produces copious errors of the form "ISO C forbids conversion of
+  # function pointer to object pointer type" and vice versa, where the
+  # function pointers are cast to/from (void *).  This is not easy to fix.
+  ifeq ($(MACHINE),i386)
+    GCC := /usr/bin/gcc-4.8
+    G++ := /usr/bin/g++-4.8
+  else
+    GCC := /usr/bin/gcc-4.8
+    G++ := /usr/bin/g++-4.8
+  endif
+
+  ifeq ($(MACHINE),powerpc)
+    kcflags     += -fsigned-char
+  endif
+
+  CCpp_libdirs = `$(GCC) --print-search-dirs | fgrep libraries: | awk -- '{print $$2}' | sed -e 's*/:*:*g' | sed -e 's*/$$**'`
+  CCpp_libs    = -lgcc_s -lstdc++
+
+  ifdef _HAS_POSIX_THREADS
+    CC           = $(GCC) -pthread -D_REENTRANT $(kcflags)
+    CCnopedantic = $(GCC) -pthread -D_REENTRANT $(kcflags)
+    CCpp         = $(G++) -pthread -D_REENTRANT $(kcflags)
+  else
+    CC           = $(GCC) -pthread $(kcflags)
+    CCnopedantic = $(GCC) -pthread $(kcflags)
+    CCpp         = $(G++) -pthread $(kcflags)
+  endif
+
+  LD           = $(GCC) -pthread $(lpath) -Wl,-rpath,$(rpath)
+  LDpp         = $(G++) -pthread $(lpath) -Wl,-rpath,$(rpath)
+  cc_picflag   = -fPIC
+  KOPTIMISE    = -O2
+
+  ifeq ($(shell fgrep -c __GLIBC__ /usr/include/features.h),0)
+    # Libc5 only needs -ldl
+    OS_LIBS          :=
+    OS_IMPLICIT_LIBS := -ldl
+  else
+    OS_LIBS          := -lpthread -lrt -ldl
+  endif
+  rpathswitch  = -rpath
+  sharedswitch = -shared
+  LDso         = ld $(sharedswitch) -rpath $(rpath)
+  slink_switch = -Bstatic
+  dlink_switch = -Bdynamic
+  expdyn_switch = -export-dynamic
+endif
+
+ifeq ($(OS),IRIX5)
+  ktmpos      = IRIX
+endif
+
+ifeq ($(OS),IRIX6)
+  ktmpos      = IRIX
+endif
+
+ifeq ($(ktmpos),IRIX)
+  ifeq ($(MACHINE),mips4)
+    machine     = -$(MACHINE) -64 -OPT:IEEE_comparisons=ON
+  else
+    ifeq ($(MACHINE),mips3)
+      machine     = -$(MACHINE) -n32 -OPT:IEEE_comparisons=ON
+    else
+      machine     = -$(MACHINE)
+    endif
+  endif
+  CC          = cc -xansi -signed -D_SGI_MP_SOURCE $(machine) $(kcflags)
+  LD          = cc -xansi $(machine) $(lpath) $(machine) -rpath $(rpath)
+  cc_picflag  = -KPIC
+  KOPTIMISE   = -O2
+  rpathswitch = -rpath
+  sharedswitch = -shared
+  LDso        = ld $(machine) $(sharedswitch)
+endif
+
+ifeq ($(OS),OSF1)
+  CCpp_libdirs = `gcc --print-search-dirs | fgrep libraries: | awk -- '{print $$2}' | sed -e 's*/:*:*g' | sed -e 's*/$$**'`
+  CCpp_libs    = -lgcc -lstdc++
+  # gcc used to cause problems with shared Xt library, seems OK now
+  #CC          = cc -std $(kcflags)
+  #cc_picflag  = -KPIC
+  CC           = gcc $(kcflags) -fpcc-struct-return -Wall
+  LD           = $(CC) $(lpath) -Wl,-rpath,$(rpath)
+  CCpp         = c++ $(kcflags)
+  LDpp         = c++ $(lpath) -Wl,-rpath,$(rpath)
+  cc_picflag   = -fPIC
+  KOPTIMISE    = -O2
+  rpathswitch  = -rpath
+  sharedswitch = -shared -expect_unresolved "*"
+  LDso         = ld $(sharedswitch)
+endif
+
+ifeq ($(OS),AIX)
+  CC         = cc -qchars=signed -qlanglvl=ansi $(kcflags)
+  LD         = cc $(lpath)
+  cc_picflag = -bM\:SRE
+  KOPTIMISE  = -O
+  sharedswitch = -H512 -T512 $(cc_picflag) -bE\:symbols
+  LDso       = ld $(sharedswitch)
+endif
+
+ifeq ($(OS),ConvexOS)
+  CC        = cc -ext $(kcflags)
+  LD        = $(CC) $(lpath)
+  KOPTIMISE = -O
+endif
+
+ifeq ($(OS),HPUX)
+  CC         = cc -Aa -D_HPUX_SOURCE $(kcflags)
+  LD         = cc $(lpath)
+  cc_picflag = +Z
+  KOPTIMISE  = -O
+endif
+
+ifeq ($(OS),ULTRIX)
+  CC        = gcc -fpcc-struct-return $(kcflags) -Wall
+  LD        = gcc $(lpath)
+  CCpp      = c++ -fpcc-struct-return $(kcflags)
+  LDpp      = c++ $(lpath)
+  KOPTIMISE = -O
+endif
+
+ifeq ($(OS),UNICOS)
+  CC        = cc $(kcflags)
+  LD        = cc $(lpath)
+  KOPTIMISE = -h inline3,scalar3,vector2
+endif
+
+ifeq ($(OS),Darwin)
+  ifeq "$(shell uname -p)" "powerpc"
+    GCC := /usr/bin/gcc-3.3
+    G++ := /usr/bin/g++-3.3
+  else
+    GCC := /usr/bin/gcc-4.2
+    G++ := /usr/bin/g++-4.2
+  endif
+
+  CCpp_libdirs = `$(GCC) --print-search-dirs | fgrep libraries: | awk -- '{print $$2}' | sed -e 's*/:*:*g' | sed -e 's*/$$**'`
+  CCpp_libs    = -lgcc -lstdc++
+  ifdef _HAS_POSIX_THREADS
+    CC           = $(GCC) -D_REENTRANT $(kcflags) -Wall -pedantic
+    CCnopedantic = $(GCC) -D_REENTRANT $(kcflags) -Wall
+    CCpp         = $(G++) -D_REENTRANT $(kcflags)
+  else
+    CC           = $(GCC) $(kcflags) -Wall -pedantic
+    CCnopedantic = $(GCC) $(kcflags) -Wall
+    CCpp         = $(G++) $(kcflags)
+  endif
+
+  LD           = $(GCC) $(lpath)#
+  LDpp         = $(G++) $(lpath)#
+  cc_picflag   = -fPIC
+  KOPTIMISE    = -O2
+
+  ifdef _HAS_POSIX_THREADS
+    ifdef USE_STATIC_KLIBS
+      OS_LIBS      = -ldl -lpthread
+    else
+      OS_LIBS      = -lpthread
+    endif
+  else
+    ifdef USE_STATIC_KLIBS
+      OS_LIBS      = -ldl
+    endif
+  endif
+
+  rpathswitch  = -rpath
+  sharedswitch = -dynamiclib
+  LDso         = $(GCC) $(sharedswitch)
+  slink_switch = -Bstatic
+  dlink_switch = -Bdynamic
+endif
+
+ifndef CC
+  CC        = cc $(kcflags)
+  LD        = cc $(lpath)
+  KOPTIMISE = -O
+endif
+
+ifndef CC_picflag
+  ifdef cc_picflag
+    CC_picflag = $(cc_picflag)
+  endif
+endif

@@ -1,0 +1,102 @@
+FROM ubuntu:14.04
+
+MAINTAINER Lindsay Magnus <lindsay@ska.ac.za>
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# Not essential, but wise to set the lang
+# Note: Users with other languages should set this in their derivative image
+RUN apt-get update && apt-get install -y language-pack-en
+ENV LANGUAGE en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
+
+RUN locale-gen en_US.UTF-8
+RUN dpkg-reconfigure locales
+
+
+# Install system packages
+RUN apt-get -y update && apt-get -y install \
+    evince \
+    htop \
+    gfortran \
+    git-core \
+    mc \
+    nano \
+    openssh-server\
+    pandoc \
+    screen \
+    subversion \ 
+#    texlive-full \
+    tree \
+    vim \
+    wget \
+    python-h5py \ 
+    python-matplotlib \
+    python-numpy \
+    python-pip \  
+    python-scipy \
+    tk tk-dev \
+    apt-transport-https \
+    build-essential pkg-config git-core software-properties-common wget \
+    python python-dev libffi-dev libssl-dev python-pip \
+    libboost-python1.55-dev \
+    libboost-system1.55-dev \
+    gfortran libatlas-dev libblas-dev liblapack-dev \
+    libhdf5-dev libfreetype6-dev libpng-dev \
+    llvm-3.6-dev libedit-dev
+
+# for the sshd
+RUN mkdir /var/run/sshd
+
+# install python packages
+RUN pip install --upgrade \
+    Cython==0.23.4 \
+    pip==8.1.2 \
+    setuptools==25.0.0 \
+    wheel==0.29.0
+
+# install python packages
+RUN pip install --upgrade \
+    astropy==1.2.1 \
+    astroquery==0.3.3 \
+    beautifulsoup4==4.5.1 \
+    blinker==1.4 \
+    dill==0.2.5 \
+    gitdb==0.6.4 \
+    GitPython==2.0.8 \
+    google-api-python-client==1.5.3 \
+    gspread==0.4.1 \
+    h5py==2.6.0 \
+    healpy==1.9.1 \
+    jupyter==1.0.0 \
+    katdal==0.6 \
+    katpoint==0.6 \
+    keyring==9.3.1 \
+    matplotlib==1.5.3 \
+    multiprocess==0.70.4 \
+    oauth2client==1.5.2 \
+    pandas==0.19.0 \
+    pox==0.2.2 \
+    ppft==1.6.4.6 \
+    ProxyTypes==0.9 \
+    pycrypto==2.6.1 \
+    pyephem==3.7.5.3 \
+    pyfits==3.4 \
+    PyMySQL==0.7.9 \
+    pyregion==1.2 \
+    pysolr==3.5.0 \
+    runipy==0.1.5 \
+    scikit-image==0.12.3 \
+    scikits.fitting==0.5.1 \
+    scipy==0.18.1 \
+    seaborn==0.7.1 \
+    simplejson==3.8.2 \
+    smmap==0.9.0 \
+    SQLAlchemy==0.7.2 \
+    Twisted==16.4.1 
+
+USER root
+
+CMD ["bash"]
+

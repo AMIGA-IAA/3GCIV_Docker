@@ -1,0 +1,113 @@
+ifdef XINCLUDEPATH
+xincswitch = -I$(XINCLUDEPATH)
+endif
+
+include $(KARMAINCLUDEPATH)/gmakedefs/general.h1
+
+ADMINBINPATH = $(KARMAROOT)/admin.bin/$(MACHINE_OS)
+
+
+TARGETS =	$(KARMABINPATH)/dos_headers \
+		$(KARMABINPATH)/backup \
+		$(ADMINBINPATH)/find_changed_packages \
+		$(ADMINBINPATH)/shader2c \
+		$(ADMINBINPATH)/sort_packages \
+		$(ADMINBINPATH)/karma_doc2man \
+		$(ADMINBINPATH)/generate_summary \
+		$(ADMINBINPATH)/widget2doc \
+		$(ADMINBINPATH)/find_changed_widgets \
+		$(ADMINBINPATH)/latex-expand \
+		$(ADMINBINPATH)/latex-words \
+		$(ADMINBINPATH)/compress-countlog \
+		$(ADMINBINPATH)/time-kread
+
+
+all: $(TARGETS) clean
+
+$(KARMABINPATH)/dos_headers: dos_headers.c $(KDEPLIB_KARMA)
+	$(CC) -c dos_headers.c -o /tmp/dos_headers.o
+	$(LD) -o $(KARMABINPATH)/dos_headers /tmp/dos_headers.o -lkarma -lm $(OS_LIBS)
+	strip $(KARMABINPATH)/dos_headers
+	rm /tmp/dos_headers.o
+
+$(KARMABINPATH)/backup: backup.c $(KDEPLIB_KARMA)
+	$(CC) -c backup.c -o /tmp/backup.o
+	$(LD) -o $(KARMABINPATH)/backup /tmp/backup.o -lkarma -lm $(OS_LIBS)
+	strip $(KARMABINPATH)/backup
+	rm /tmp/backup.o
+
+$(ADMINBINPATH)/find_changed_packages: find_changed_packages.c $(KDEPLIB_KARMA)
+	$(CC) -c find_changed_packages.c -o /tmp/find_changed_packages.o
+	$(LD) -o $(ADMINBINPATH)/find_changed_packages /tmp/find_changed_packages.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/find_changed_packages
+	rm /tmp/find_changed_packages.o
+	chmod u=rwx,go=x $(ADMINBINPATH)/find_changed_packages
+
+$(ADMINBINPATH)/shader2c: shader2c.c $(KDEPLIB_KARMA)
+	$(CC) -c shader2c.c -o /tmp/shader2c.o
+	$(LD) -o $(ADMINBINPATH)/shader2c /tmp/shader2c.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/shader2c
+	rm /tmp/shader2c.o
+	chmod u=rwx,go=x $(ADMINBINPATH)/shader2c
+
+$(ADMINBINPATH)/sort_packages: sort_packages.c $(KDEPLIB_KARMA)
+	$(CC) -c sort_packages.c -o /tmp/sort_packages.o
+	$(LD) -o $(ADMINBINPATH)/sort_packages /tmp/sort_packages.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/sort_packages
+	rm /tmp/sort_packages.o
+
+$(ADMINBINPATH)/karma_doc2man: karma_doc2man.c $(KDEPLIB_KARMA)
+	$(CC) -c karma_doc2man.c -o /tmp/karma_doc2man.o
+	$(LD) -o $(ADMINBINPATH)/karma_doc2man /tmp/karma_doc2man.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/karma_doc2man
+	rm /tmp/karma_doc2man.o
+
+$(ADMINBINPATH)/generate_summary: generate_summary.c $(KDEPLIB_KARMA)
+	$(CC) -c generate_summary.c -o /tmp/generate_summary.o
+	$(LD) -o $(ADMINBINPATH)/generate_summary /tmp/generate_summary.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/generate_summary
+	rm /tmp/generate_summary.o
+
+$(ADMINBINPATH)/widget2doc: widget2doc.c $(KDEPLIB_KARMA)
+	$(CC) -c widget2doc.c -o /tmp/widget2doc.o
+	$(LD) -o $(ADMINBINPATH)/widget2doc /tmp/widget2doc.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/widget2doc
+	rm /tmp/widget2doc.o
+
+$(ADMINBINPATH)/find_changed_widgets: find_changed_widgets.c $(KDEPLIB_KARMA)
+	$(CC) -c find_changed_widgets.c -o /tmp/find_changed_widgets.o
+	$(LD) -o $(ADMINBINPATH)/find_changed_widgets /tmp/find_changed_widgets.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/find_changed_widgets
+	rm /tmp/find_changed_widgets.o
+
+$(ADMINBINPATH)/latex-expand: latex-expand.c $(KDEPLIB_KARMA)
+	$(CC) -c latex-expand.c -o /tmp/latex-expand.o
+	$(LD) -o $(ADMINBINPATH)/latex-expand /tmp/latex-expand.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/latex-expand
+	rm /tmp/latex-expand.o
+
+$(ADMINBINPATH)/latex-words: latex-words.c $(KDEPLIB_KARMA)
+	$(CC) -c latex-words.c -o /tmp/latex-words.o
+	$(LD) -o $(ADMINBINPATH)/latex-words /tmp/latex-words.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/latex-words
+	rm /tmp/latex-words.o
+
+$(ADMINBINPATH)/compress-countlog: compress-countlog.c $(KDEPLIB_KARMA)
+	$(CC) -c compress-countlog.c -o /tmp/compress-countlog.o
+	$(LD) -o $(ADMINBINPATH)/compress-countlog /tmp/compress-countlog.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/compress-countlog
+	rm /tmp/compress-countlog.o
+
+$(ADMINBINPATH)/time-kread: time-kread.c $(KDEPLIB_KARMA)
+	$(CC) -c time-kread.c -o /tmp/time-kread.o
+	$(LD) -o $(ADMINBINPATH)/time-kread /tmp/time-kread.o -lkarma -lm $(OS_LIBS)
+	strip $(ADMINBINPATH)/time-kread
+	rm /tmp/time-kread.o
+
+
+clean:
+	\rm -f *~
+
+
+remove:
+	\rm -f $(TARGETS)

@@ -1,0 +1,8 @@
+FROM karma_3gciv
+MAINTAINER Ben Hugo "bhugo@ska.ac.za"
+RUN cp -r /karma-1.7.20/share /karma-1.7.20/build/Linux/share
+RUN cp -r /karma-1.7.20/www /karma-1.7.20/build/Linux/www
+RUN cp -r /karma-1.7.20/man /karma-1.7.20/build/Linux/man
+RUN cp -r /karma-1.7.20/doc /karma-1.7.20/build/Linux/doc
+
+

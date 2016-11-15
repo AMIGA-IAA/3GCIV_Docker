@@ -1,0 +1,4 @@
+FROM gipsy_3gciv
+
+RUN apt-get install -y vim
+ENV EDITOR vim

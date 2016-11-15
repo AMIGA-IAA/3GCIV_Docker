@@ -1,0 +1,63 @@
+FROM centos
+MAINTAINER Ben Hugo "bhugo@ska.ac.za"
+#basic  dependencies
+RUN yum install -y wget
+RUN yum install -y gcc gcc-c++ make openssl-devel gcc-gfortran
+RUN yum install -y libXmu-devel.x86_64 libX11-devel.x86_64 libICE-devel.x86_64 libSM-devel.x86_64 libXext-devel.x86_64 libXt-devel.x86_64 libXaw-devel.x86_64 xorg-x11-utils.x86_64 Xaw3d-devel
+RUN yum install -y tcsh cvs rsync readline-devel.x86_64 
+RUN yum install -y libXpm-devel.x86_64 ncurses-devel.x86_64 libedit-devel.x86_64
+RUN wget http://elrepo.org/linux/elrepo/el7/x86_64/RPMS/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+RUN rpm -Uvh elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+RUN yum install -y libbsd-devel
+RUN yum install -y perl
+RUN yum install -y bash
+RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-8.noarch.rpm
+RUN rpm -Uvh epel-release-7-8.noarch.rpm
+RUN yum install -y dev86
+RUN ln -s /usr/lib64/bcc/include/bsd/sgtty.h /usr/include/bsd/sgtty.h
+
+#lets go bananas
+RUN mkdir /data
+RUN chmod 777 /data
+RUN useradd -ms /bin/tcsh aips
+RUN groupadd aipsusers
+RUN usermod -aG aipsusers aips
+USER aips
+WORKDIR /home/aips
+RUN mkdir AIPS
+WORKDIR /home/aips/AIPS
+RUN wget ftp://ftp.aoc.nrao.edu/pub/software/aips/31DEC15/31DEC15.tar.gz
+RUN tar -xvf 31DEC15.tar.gz
+RUN ln -s 31DEC15/SYSTEM/UNIX/PERL/install.pl install.pl
+RUN sed -i -- 's/COMPILER="fort77"/COMPILER="gfortran"/g' 31DEC15/LNX64/SYSTEM/FDEFAULT.SH
+RUN sed -i -- 's/COMPILER=\/opt\/intel\/fce\/10.1.021\/bin\/ifort/COMPILER="gfortran"/g' 31DEC15/LNX64/SYSTEM/FDEFAULT.SH
+RUN sed -i -- 's/COMPILER=\/opt\/intel\/Compiler\/11.0\/074\/bin\/intel64\/icc/COMPILER="gcc"/g' 31DEC15/LNX64/SYSTEM/CCOPTS.SH
+RUN sed -i -- 's/COMPILER=\/opt\/intel\/fce\/10.1.021\/bin\/ifort/compiler="gfortran"/g' 31DEC15/LNX64/SYSTEM/LDOPTS.SH
+RUN sed -i -- 's/COMPILER=\/usr\/bin\/g77/COMPILER=gfortran/g' 31DEC15/LINUX/SYSTEM/FDEFAULT.SH
+RUN sed -i -- 's/COMPILER="fort77"/COMPILER=gfortran/g' 31DEC15/LINUX/SYSTEM/FDEFAULT.SH
+RUN sed -i -- 's/COMPILER="\/usr\/bin\/g77"/COMPILER=gfortran/g' 31DEC15/LINUX/SYSTEM/LDOPTS.SH
+RUN sed -i -- 's/LINK="-m64"/LINK="-m64 -lbsd"/g' 31DEC15/LNX64/SYSTEM/LDOPTS.SH
+RUN sed -i -- 's/LINK=""/LINK="-lbsd"/g' 31DEC15/LNX64/SYSTEM/LDOPTS.SH
+RUN sed -i -- 's/LINK="-m64"/LINK="-m64 -lbsd"/g' 31DEC15/LNX64/SYSTEM/LDOPTS.SH
+
+
+#RUN sed -i -- 's/      PARAMETER (PKPWRD = 2)/C      PARAMETER (PKPWRD = 2)/g' 31DEC15/INC/PAPC.INC
+#RUN sed -i -- 's/C     PARAMETER (PKPWRD = 200000000)/     PARAMETER (PKPWRD = 200000000)/g' 31DEC15/INC/PAPC.INC
+RUN sed -i -- 's/#  APCLN              LNX64            1           0/  APCLN              LNX64            1           0/g' 31DEC15/SYSTEM/UNIX/OPTIMIZE.LIS
+RUN sed -i -- 's/printf NEW "LOCALOPTS_\$ARCH = \$CCOMOPT\\n";/printf NEW ("LOCALOPTS_\$ARCH = \$CCOMOPT\\n" =~ s\/[ ]*-c[ ]+\/ \/r);/g' 31DEC15/SYSTEM/UNIX/PERL/install.pl
+#RUN sed -i -- 's/#include <bsd\/sgtty.h>/#include <termios.h>/g' 31DEC15/APL/DEV/UNIX/ZTVSRV.C
+#RUN sed -i -- 's/#include <bsd\/sgtty.h>/#include <termios.h>/g' 31DEC15/APL/DEV/UNIX/ZTKSRV.C
+#RUN sed -i -- 's/#include <bsd\/sgtty.h>/#include <termios.h>/g' 31DEC15/APL/DEV/UNIX/ZMSSRV.C
+#RUN sed -i -- 's/#include <bsd\/sgtty.h>/#include <termios.h>/g' 31DEC15/APL/DEV/UNIX/BELL/SGI/ZTKSRV.C
+#RUN sed -i -- 's/#include <bsd\/sgtty.h>/#include <termios.h>/g' 31DEC15/APL/DEV/UNIX/BERK/DEC/ZTKSRV.C
+RUN sed -i -- 's/\$GROUP = (getgrgid((getpwnam(getlogin))\[3\]))\[\0\];/\$GROUP = "aips";/g' 31DEC15/SYSTEM/UNIX/PERL/install.pl
+RUN sed -i -- 's/\$LINK = \$link;/$LINK = "$link -lbsd";/g' 31DEC15/SYSTEM/UNIX/PERL/install.pl
+RUN sed -i -- 's/\$SITE = "UNSET";/\$SITE = "DEEPTHOUGHT";/g' 31DEC15/SYSTEM/UNIX/PERL/install.pl
+RUN ./install.pl
+
+
+#ENV PATH $PATH:${gip_root}/exe/linux64
+#ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:${gip_root}/lib/linux64
+ENV DISPLAY :0
+
+ENTRYPOINT ["tcsh"]
